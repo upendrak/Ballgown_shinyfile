@@ -1,2 +1,2 @@
 # Ballgown_shinyapp
-This repo provides RNA seq differential expression package Ballgown  as a Shiny framework for interactice data analysis and visualiztion
+This repo provides RNA seq differential expression package Ballgown  as a Shiny framework for interactice data analysis and visualiztion. The original source of this code is from [here](https://github.com/Kapeel/Ballgown_shinyapp). The original repo has been modified to include the `shinyfile` library that helps one to browse the both the inputs and outputs to be saved on the server side. If you want to test it on your computer, please edit the `/srv/shiny-server` path in the `server.R` file
