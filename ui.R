@@ -21,7 +21,7 @@ shinyUI(pageWithSidebar(
     
     tags$h3('Select your Parameters:'),
     
-    textInput("covariate", label = "Name of the covariate of interest for the differential expression tests; correspond column name of design matrix file", value = ""),
+    textInput("covariate", label = "Name of the covariate of interest for the differential expression tests", value = ""),
     
     selectInput("featureInput", "Genomic feature",
                 choices = c("transcript", "exon")),
@@ -72,7 +72,7 @@ shinyUI(pageWithSidebar(
                          textInput('gv_var_sample', label = 'Enter the name of the sample: ', value = ''),
                          plotOutput('plot1'),
                          shinySaveButton(id = 'downloadplot1', label =  'Save plot', title = "Save plot as...", filetype = "png")
-
+                         
     )
   )
 )
