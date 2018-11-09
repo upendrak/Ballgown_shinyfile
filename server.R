@@ -7,127 +7,95 @@
 #    http://shiny.rstudio.com/
 #
 
-#source("http://bioconductor.org/biocLite.R")
-#biocLite("ballgown")
-#install.packages("DT")
-#install.packages("downloader")
 library(shiny)
 library(ballgown)
 library(genefilter)
-library(DT)
 library(downloader)
 library(dplyr)
 library(RCurl)
+library(ballgown)
+library(ggplot2)
+
 # Define server logic required to draw a histogram
-shinyServer(function(input, output) {
-  
-  saved_plots_and_tables <- reactiveValues(
-    plot1 = NULL,
-    plot2 = NULL
-  )
-  
-  bg <- reactive({
-    inFile <- input$design_mtx
-  #  if(input$design_mtx==0)
-     if(is.null(inFile))
+shinyServer(function(input, output, session) {
+  shinyDirChoose(input, 'dir', roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/'))
+  shinyFileChoose(input, 'design_mtx', roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/'), filetypes=c('txt', 'csv'))
+
+  bg1 <- reactive({
+    inFile <- parseFilePaths(roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp'), input$design_mtx)
+    if(is.null(inFile))
       return(NULL)
-    ctab_path <- input$ballgown_dir
-  #  ctab_path
-  #  browser()
+    ctab_path <- parseDirPath(roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp'), input$dir)
     ctab_fdr <- basename(ctab_path)
-    #ctab_fdr2 <- paste("/usr/local/apache2/htdocs/data/ballgown_shiny",ctab_fdr, sep= '/')
-    download(input$ballgown_dir,ctab_fdr,mode = "wb")
-    #download(input$ballgown_dir,ctab_fdr,mode = "wb")
-    #file_url <- "http://brie.cshl.edu/data/test.zip"
-    #download(file_url,"ctest.zip",mode = "wb")
-    unzip(zipfile=ctab_fdr,exdir = "./")
-    #unzip( zipfile="ctest.zip" , exdir = "./" )
     ctab_fdr_ucmp<-tools::file_path_sans_ext(ctab_fdr)
     pheno_data <- read.table(inFile$datapath, header = TRUE, sep = "\t")
-    #sample_full_path <- paste(input$ballgown_dir,pheno_data[,1], sep = '/')
-    #sample_full_path <- paste(ctab_fdr_ucmp,pheno_data[,1], sep = '/')
     sample_full_path <- paste(ctab_fdr_ucmp,pheno_data[,1], sep = '/')
-    #sample_full_path <- paste("/usr/local/apache2/htdocs/data/ballgown_shiny",ctab_fdr_ucmp,pheno_data[,1], sep = '/')
     bg <- ballgown(samples=as.vector(sample_full_path),pData=pheno_data)
   })
   
-  pheno_data <- reactive({
-    inFile <- input$design_mtx
-    #if(input$design_mtx==0)
-    if(is.null(inFile))
-      return(NULL)
-    pheno_data <- read.table(inFile$datapath, header = TRUE, sep = "\t")
-  })
- 
- # output$covOutput <- renderUI({
-  #  selectInput("covInput", "Covariate of interest",
-  #              sort(unique(colnames(pheno_data()))),
-  #              selected = "NA"
-   #             )
- # }) 
-  output$phenoContent <- DT::renderDataTable({
-    pheno_data()
-  })
-  output$downloadSummary <- downloadHandler(
-    filename = function() { "desgin_matrix.txt" },
-    content = function(file) {
-      write.table(pheno_data(), file)
+  output$contents <- renderDataTable({
+    inFile <- parseFilePaths(roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp'), input$design_mtx)
+    if( NROW(inFile)) {
+      df <- read.csv(as.character(inFile$datapath), header = TRUE, sep = "\t")
+      return(df)
     }
-  )
-  output$transContent <-  DT::renderDataTable({
-    texpr(bg(), 'all')
   })
-  output$downloadTrans <- downloadHandler(
-    filename = function() { "Transcript_summary_table.txt" },
-    content = function(file) {
-      write.table(texpr(bg(), 'all'), file)
-    }
-  )
-  output$contents <- DT::renderDataTable({
-    results_genes = stattest(bg(), feature=input$featureInput, meas=input$measInput, covariate=input$covariate, getFC = TRUE)
+  
+  output$transContent <- renderDataTable({
+    ranscript_data_frame = texpr(bg1(), 'all')
+    return(ranscript_data_frame)
   })
-  output$downloadDiffResults <- downloadHandler(
-    filename = function() { "Diff_expression_summary_table.txt" },
-    content = function(file) {
-      write.table(stattest(bg(), feature=input$featureInput, meas=input$measInput, covariate=input$covariate, getFC = TRUE), file)
+  
+  observe({
+    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    shinyFileSave(input, "downloadTrans1", roots=volumes, session=session)
+    fileinfo <- parseSavePath(volumes, input$downloadTrans1)
+    if (nrow(fileinfo) > 0) {
+      write.table(texpr(bg1(), 'all'), as.character(fileinfo$datapath), quote = F, sep = "\t", row.names = F)
     }
-  )
+  })
+  
+  output$decontents <- renderDataTable({
+    results_genes = stattest(bg1(), feature=input$featureInput, meas=input$measInput, covariate=input$covariate, getFC=TRUE)
+    return(results_genes)
+  })
+  
+  observe({
+    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    shinyFileSave(input, "downloadexpression1", roots=volumes, session=session)
+    fileinfo <- parseSavePath(volumes, input$downloadexpression1)
+    if (nrow(fileinfo) > 0) {
+      write.table(stattest(bg1(), feature=input$featureInput, meas=input$measInput, covariate=input$covariate, getFC=TRUE), 
+                  as.character(fileinfo$datapath), quote = F, sep = "\t", row.names = F)
+    }
+  })
+  
   output$plot1 <- renderPlot({
-#    fpkm=texpr(bg(),meas =input$measInput)
-#    fpkm= log2(fpkm+1)
- #   #boxplot(fpkm,col=as.numeric(pheno_data()$group),las=2,ylab='log2')
-#    cov_positon = match(input$covariate,colnames(pheno_data()))
-#    boxplot(fpkm,col=as.numeric(pheno_data()[,cov_positon]),las=2,ylab=paste("log2", input$measInput,collapse = ", ") )
     all_sample_list <- c(strsplit(input$gv_var_sample, " ")[[1]])
-  saved_plots_and_tables$plot1 <- plotTranscripts(gene=input$gv_var_input, gown=bg(), samples=all_sample_list, meas=input$measInput, colorby=input$featureInput, labelTranscripts= TRUE)
- # ggsave("gene_view_plot.png",saved_plots_and_tables$plot1)
-  })
- 
-  output$downloadPlot1 <- downloadHandler(
-    filename = function() {
-      "gene_view_plot.png"
-    },
-    content = function(file) {
-      ggsave(saved_plots_and_tables$plot1)
-      #unlink(saved_plots_and_tables$plot1)
-      #png(file)
-      #print(saved_plots_and_tables$plot1)
-      #dev.off
-     # file.copy("gene_view_plot.png", file, overwrite=TRUE)
+    plotTranscripts(gene=input$gv_var_input, gown=bg1(), samples=all_sample_list, colorby=input$featureInput, meas=input$measInput, labelTranscripts=TRUE)
     })
+  
+  observe({
+    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    shinyFileSave(input, "downloadplot1", roots=volumes, session=session)
+    fileinfo <- parseSavePath(volumes, input$downloadplot1)
+    if (nrow(fileinfo) > 0) {
+      ggsave(plotTranscripts(gene=input$gv_var_input, gown=bg1(), samples=all_sample_list, colorby=input$featureInput, meas=input$measInput, labelTranscripts=TRUE), filename = as.character(fileinfo$datapath), width = 12)
+    }
+  })
+
   output$plot2 <- renderPlot({
-    saved_plots_and_tables$plot2 <- plotMeans(input$gv_var_input, bg(), groupvar=input$covariate, meas=input$measInput, colorby=input$featureInput, labelTranscripts= TRUE)
-    saved_plots_and_tables$plot2
+    plotMeans(gene=input$gv_var_input, gown=bg1(), groupvar=input$covariate, colorby=input$featureInput, meas=input$measInput, labelTranscripts=TRUE)
   })
   
-  output$downloadPlot2 <- downloadHandler(
-    filename = function() {
-      "gene_experiment_view_plot.png"
-    },
-    content = function(file) {
-      ggsave(saved_plots_and_tables$plot2)
-    })
-  
+  observe({
+    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    shinyFileSave(input, "downloadplot2", roots=volumes, session=session)
+    fileinfo <- parseSavePath(volumes, input$downloadplot2)
+    if (nrow(fileinfo) > 0) {
+      ggsave(plotMeans(gene=input$gv_var_input, gown=bg1(), groupvar=input$covariate, colorby=input$featureInput, meas=input$measInput, labelTranscripts=TRUE), filename = as.character(fileinfo$datapath))
+    }
+  })
   
 })
 
