@@ -76,11 +76,12 @@ shinyServer(function(input, output, session) {
     })
   
   observe({
+    all_sample_list <- c(strsplit(input$gv_var_sample, " ")[[1]])
     volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
     shinyFileSave(input, "downloadplot1", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$downloadplot1)
     if (nrow(fileinfo) > 0) {
-      ggsave(plotTranscripts(gene=input$gv_var_input, gown=bg1(), samples=all_sample_list, colorby=input$featureInput, meas=input$measInput, labelTranscripts=TRUE), filename = as.character(fileinfo$datapath), width = 12)
+      ggsave(plotTranscripts(gene=input$gv_var_input, gown=bg1(), samples=all_sample_list, colorby=input$featureInput, meas=input$measInput, labelTranscripts=TRUE), filename = as.character(fileinfo$datapath))
     }
   })
 
