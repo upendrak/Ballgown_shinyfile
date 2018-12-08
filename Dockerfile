@@ -16,10 +16,10 @@ RUN Rscript -e "install.packages('RCurl', dependencies=TRUE, repos='http://cran.
 RUN Rscript -e "install.packages('dplyr', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN Rscript -e "install.packages('XML', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN Rscript -e 'source("https://bioconductor.org/biocLite.R"); biocLite("genefilter");biocLite("ballgown");'
+RUN Rscript -e "install.packages('shinyFiles', repos='http://cran.rstudio.com/')"
 # Remove Shiny example inherited from the base image
 RUN rm -rf /srv/shiny-server/* 
- 
-# Copy the source code of the app from my hard drive to the container (in this case we use the app "wordcloud" from http://shiny.rstudio.com/gallery/word-cloud.html)
+# Copy the source code of the app from my hard drive to the container
 COPY server.R ui.R /srv/shiny-server/
 # change permission of the shiny folder where the app sits
 RUN chmod -R 777 /srv/shiny-server

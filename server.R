@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(shinyFiles)
 library(ballgown)
 library(genefilter)
 library(downloader)
@@ -18,14 +19,14 @@ library(ggplot2)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
-  shinyDirChoose(input, 'dir', roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/'))
-  shinyFileChoose(input, 'design_mtx', roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/'), filetypes=c('txt', 'csv'))
+  shinyDirChoose(input, 'dir', roots=c(wd='/srv/shiny-server'))
+  shinyFileChoose(input, 'design_mtx', roots=c(wd='/srv/shiny-server'), filetypes=c('txt', 'csv'))
 
   bg1 <- reactive({
-    inFile <- parseFilePaths(roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp'), input$design_mtx)
+    inFile <- parseFilePaths(roots=c(wd='/srv/shiny-server'), input$design_mtx)
     if(is.null(inFile))
       return(NULL)
-    ctab_path <- parseDirPath(roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp'), input$dir)
+    ctab_path <- parseDirPath(roots=c(wd='/srv/shiny-server'), input$dir)
     ctab_fdr <- basename(ctab_path)
     ctab_fdr_ucmp<-tools::file_path_sans_ext(ctab_fdr)
     pheno_data <- read.table(inFile$datapath, header = TRUE, sep = "\t")
@@ -34,7 +35,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$contents <- renderDataTable({
-    inFile <- parseFilePaths(roots=c(wd='/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp'), input$design_mtx)
+    inFile <- parseFilePaths(roots=c(wd='/srv/shiny-server'), input$design_mtx)
     if( NROW(inFile)) {
       df <- read.csv(as.character(inFile$datapath), header = TRUE, sep = "\t")
       return(df)
@@ -47,7 +48,7 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    volumes <- c("wd"="/srv/shiny-server")
     shinyFileSave(input, "downloadTrans1", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$downloadTrans1)
     if (nrow(fileinfo) > 0) {
@@ -61,7 +62,7 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    volumes <- c("wd"="/srv/shiny-server")
     shinyFileSave(input, "downloadexpression1", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$downloadexpression1)
     if (nrow(fileinfo) > 0) {
@@ -77,7 +78,7 @@ shinyServer(function(input, output, session) {
   
   observe({
     all_sample_list <- c(strsplit(input$gv_var_sample, " ")[[1]])
-    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    volumes <- c("wd"="/srv/shiny-server")
     shinyFileSave(input, "downloadplot1", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$downloadplot1)
     if (nrow(fileinfo) > 0) {
@@ -90,7 +91,7 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    volumes <- c("wd"="/Users/upendra_35/Documents/CyVerse/Images_apps/DE/VICE/Ballgown_shinyapp/")
+    volumes <- c("wd"="/srv/shiny-server")
     shinyFileSave(input, "downloadplot2", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$downloadplot2)
     if (nrow(fileinfo) > 0) {
